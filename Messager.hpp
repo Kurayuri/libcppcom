@@ -14,7 +14,7 @@ class Messager {
     enum { NOSET = 0, DEBUG = 10, INFO = 20, WARNING = 30, ERROR = 40, CRITICAL = 50 };
 
     using Level = int;
-    enum Style { RED, YELLOW, GREEN, BLUE, NORMAL };
+    enum Style { UNSET, NORMAL, RED, YELLOW, GREEN, BLUE,};
 
     explicit Messager(Level level = NOSET) : messageLevel(level) {}
 
@@ -132,7 +132,7 @@ class Messager {
     }
     Level messageLevel = NOSET;
     Level messageProgressLevel = NOSET;
-    bool enableFmt = false;
+    bool enableFmt = true;
 
   private:
     template <typename... Args> inline std::string styleString(Args &&...args) const {
@@ -140,7 +140,7 @@ class Messager {
         std::ostringstream oss;
         (oss << ... << std::forward<Args>(args)); // Fold expression to concatenate all arguments
         std::string styledString = oss.str();
-        Style style = NORMAL; // Default style
+        Style style = UNSET; // Default style
         switch (style) {
         case RED:
             return "\033[31m" + styledString + "\033[0m"; // Red
