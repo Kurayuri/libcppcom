@@ -204,8 +204,8 @@ class LCCSModel {
     void optimize() {
         // Optimization logic goes here
         // This is a placeholder for the actual optimization algorithm
-        std::cout << "Optimizing model with " << vars.size() << " variables and " << constrs.size()
-                  << " constraints." << std::endl;
+        // std::cout << "Optimizing model with " << vars.size() << " variables and " << constrs.size()
+        //           << " constraints." << std::endl;
     }
     void write(const std::string &filename) const {
         // Write model to a file (e.g., LP format)

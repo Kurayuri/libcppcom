@@ -1,20 +1,20 @@
 #pragma once
 #include "FileUtils.hpp"
 #include <algorithm>
+#include <deque>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <optional>
 #include <string>
-#include <iostream>
 #include <variant>
-
 namespace fs = std::filesystem;
 class CacheFile {
   public:
     static constexpr const char *FILENAME_PATTERN = "{path}.cache";
 
     CacheFile(const fs::path &path, const std::string &filename_pattern = FILENAME_PATTERN,
-              std::optional<int> fn_cache = std::nullopt)
+              std::optional<int64_t> fn_cache = std::nullopt)
         : filename_pattern(filename_pattern), fn_cache(fn_cache), path(path) {
         cache_path = get_cache_path(path);
     }
@@ -22,26 +22,34 @@ class CacheFile {
     void cache() {
         std::cout << "Generate Cache" << std::endl;
         if (fn_cache.has_value()) {
-            if (fn_cache.value() > 0) {
-
-                std::cout << "Cache size: " << fn_cache.value() << std::endl;
-                std::ifstream f(path, std::ios::binary);
-                std::ofstream cache_f(cache_path, std::ios::binary);
+            std::cout << "Cache size: " << *fn_cache << std::endl;
+            std::ifstream f(path, std::ios::binary);
+            std::ofstream cache_f(cache_path, std::ios::binary);
+            std::string line;
+            if (*fn_cache >= 0) {
+                // Read only the first fn_cache lines
+                size_t n = *fn_cache;
                 size_t idx = 0;
-                std::string line;
-
-                while (std::getline(f, line) && idx < fn_cache.value()) {
+                while (std::getline(f, line) && idx < n) {
                     cache_f << line << std::endl;
                     ++idx;
                 }
-
-                f.close();
-                cache_f.close();
-            } else if (fn_cache.has_value() &&
-                       std::is_function<decltype(fn_cache.value())>::value) {
-                // Call the function if fn_cache is callable
-                // This part needs to be implemented based on the specific function signature
+            } else {
+                // Read the last -fn_cache lines
+                size_t n = -(*fn_cache);
+                std::deque<std::string> buffer;
+                while (std::getline(f, line)) {
+                    buffer.push_back(line);
+                    if (buffer.size() > n)
+                        buffer.pop_front();
+                }
+                for (const auto &l : buffer) {
+                    cache_f << l << std::endl;
+                }
             }
+
+            f.close();
+            cache_f.close();
         }
     }
 
@@ -99,7 +107,7 @@ class CacheFile {
                 bool valid = true;
                 auto cache_line_count = FileUtils::countLines(cache_path);
                 if (fn_cache.has_value()) {
-                    int fn_cache_line = fn_cache.value();
+                    size_t fn_cache_line = std::abs(fn_cache.value());
                     std::cout << "fn_Cache " + std::to_string(fn_cache_line) +
                                      ", Cache: " + std::to_string(cache_line_count)
                               << std::endl;
@@ -124,9 +132,8 @@ class CacheFile {
 
     // private:
     std::string filename_pattern;
-    std::optional<int> fn_cache;
+    std::optional<int64_t> fn_cache;
     bool read_mode;
     fs::path path;
     fs::path cache_path;
 };
-

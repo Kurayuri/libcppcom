@@ -73,7 +73,9 @@ LP_ inline to_LP_(const LCCSModel &lccs_model) {
     result.integrality_.resize(result.num_col_);
 
     for (const auto &var : lccs_model.vars) {
-        result.col_cost_[var.id] = lccs_model.objective.items.at(var.id).coef;
+        auto var_it = lccs_model.objective.items.find(var.id);
+        HighsValue_t coef = var_it != lccs_model.objective.items.end() ? var_it->second.coef : 0.0;
+        result.col_cost_[var.id] = coef;
         result.col_lower_[var.id] = var.lb;
         result.col_upper_[var.id] = var.ub;
         result.integrality_[var.id] = toHighsVarType(var.type);
@@ -84,7 +86,7 @@ LP_ inline to_LP_(const LCCSModel &lccs_model) {
     result.a_matrix_.format_ = MatrixFormat::kRowwise;
 
     size_t idx = 0;
-    for (HighsSize_t i = 0; i < lccs_model.constrs.size(); ++i) {
+    for (size_t i = 0; i < lccs_model.constrs.size(); ++i) {
         const auto &constr = lccs_model.constrs[i];
 
         result.a_matrix_.start_.push_back(idx);
