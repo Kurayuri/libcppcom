@@ -22,6 +22,41 @@ inline const nlohmann::json &get(const nlohmann::json &j, const std::string &key
     }
 }
 
+inline std::vector<std::string> splitMultiJson(const std::string &json_str) {
+    std::vector<std::string> result;
+    std::istringstream iss(json_str);
+    std::string line, buffer;
+    size_t brace_count = 0;
+
+    while (std::getline(iss, line)) {
+        for (char c : line) {
+            if (c == '{')
+                ++brace_count;
+            if (c == '}')
+                --brace_count;
+        }
+        buffer += line + "\n";
+        if (brace_count == 0 && !buffer.empty()) {
+            result.push_back(buffer);
+            buffer.clear();
+        }
+    }
+    return result;
+}
+
+inline std::vector<nlohmann::json> parseMultiJson(const std::string &json_str) {
+    std::vector<nlohmann::json> result;
+    std::vector<std::string> json_lines = splitMultiJson(json_str);
+    for (const auto &line : json_lines) {
+        try {
+            result.push_back(nlohmann::json::parse(line));
+        } catch (const nlohmann::json::parse_error &e) {
+            std::cerr << "JSON parse error: " << e.what() << " in line: " << line << std::endl;
+        }
+    }
+    return result;
+}
+
 class JSONLineLogger {
     // LEVEL and STYLE enums similar to Python constants
     struct LEVEL {
