@@ -6,7 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 namespace JsonUtils {
-inline const nlohmann::json EMPTY_JSON;
+inline const nlohmann::json EMPTY_JSON = nlohmann::json::object();
 
 template <typename T>
 std::string dump(const T &obj, const int indent = -1, const char indent_char = ' ',
@@ -55,6 +55,44 @@ inline std::vector<nlohmann::json> parseMultiJson(const std::string &json_str) {
         }
     }
     return result;
+}
+
+
+inline nlohmann::json load(const std::string &path) {
+    std::ifstream f(path);
+    if (!f.is_open()) {
+        throw std::runtime_error("Failed to open JSON file: " + path);
+    }
+    nlohmann::json j;
+    f >> j;
+    f.close();
+    return j;
+}
+
+inline void
+convertJsonFileToJsonLinesFile(const std::string &input_path,
+                               const std::string &output_path,
+                               const std::string &key = "key",
+                               const std::string &value = "value") {
+    nlohmann::json input_json = std::move(load(input_path));
+    std::ofstream outfile(output_path);
+    if (!outfile.is_open()) {
+        throw std::runtime_error("Failed to open output file: " + output_path);
+    }
+    if (input_json.is_array()) {
+        for (const auto &item : input_json) {
+            outfile << item.dump() << std::endl;
+        }
+    } else if (input_json.is_object()) {
+        for (const auto &[key, value] : input_json.items()) {
+            nlohmann::json line = {{"key", key}, {"value", value}};
+            outfile << line.dump() << std::endl;
+        }
+    } else {
+        throw std::runtime_error("Input JSON is neither an object nor an array.");
+    }
+
+    outfile.close();
 }
 
 class JSONLineLogger {
